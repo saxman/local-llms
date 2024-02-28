@@ -22,19 +22,30 @@ generate_kwargs = {
     "top_p": 0.95
 }
 
-# Create a document for the current session
+messages = None
+
+# If this is a new chat session, get the context of the last conversation, adn create a document in the db for the current session
 if "doc_id" not in st.session_state:
     with TinyDB("messages_db.json") as db:
-        st.session_state.doc_id = db.insert({})
+        try:
+            last = db.all()[-1]
+            mesages = db.get(doc_id=last.doc_id)["messages"]
+        except:
+            st.session_state.doc_id = db.insert({})
 
 # Initialize chat history with system message.
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {
-            "role": "user",
-            "content": "You are a friendly chatbot who is curious about the user. You will ask the user a one or two questions to get to know them better. You will keep your responses short."
-        }
-    ]
+    if messages != None and len(messages) > 0:
+        st.session_state.messages = messages
+    else:
+        st.session_state.messages = [
+            {
+                "role": "user",
+                "content": """You are a friendly chatbot who is curious about the user.
+                    You will ask the user a one or two questions to get to know them better.
+                    You will keep your responses short."""
+            }
+        ]
 
 if "pipe" not in st.session_state:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
